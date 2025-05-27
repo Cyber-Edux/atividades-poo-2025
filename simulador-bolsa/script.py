@@ -326,13 +326,11 @@ class Pregao:
         - valor (float, opcional): valor máximo pelo qual o ativo deve ser comprado. Caso seja None, não tem valor máximo.
         Retorna (float ou None): o valor pelo qual o ativo foi comprado, ou None caso a compra não tenha sido feita de imediato.
         """
-        # 1. Verifica se o criador tem saldo suficiente para a compra
         if valor is not None and criador.saldo < valor:
             raise ValueError(
                 f"Saldo insuficiente para a compra. Saldo atual: R${criador.saldo}"
             )
 
-        # 2. Procura por uma ordem de venda compatível (valor menor ou igual ao oferecido)
         ordem_compativel = None
         for ordem_venda in self.ordens_de_venda:
             if ordem_venda.status == "pendente" and ordem_venda.ticker == ticker:
@@ -340,7 +338,6 @@ class Pregao:
                     ordem_compativel = ordem_venda
                     break
 
-        # 2.1 Se encontrou uma ordem compatível, executar a negociação imediatamente
         if ordem_compativel:
             ativo_negociado = None
             if ticker in self.bolsa.ativos:
@@ -359,7 +356,6 @@ class Pregao:
 
                 return ordem_compativel.valor
 
-        # 2.2 Se não encontrou ordem compatível, criar ordem de compra pendente
         if valor is not None:
             ordem_compra = OrdemDeCompra(ticker, criador, valor, "pendente")
             self.ordens_de_compra.append(ordem_compra)
@@ -378,7 +374,6 @@ class Pregao:
         - valor (float, opcional): valor mínimo pelo qual o ativo deve ser vendido. Caso seja None, não tem valor mínimo.
         Retorna (float ou None): o valor pelo qual ativo foi vendido, ou None caso a venda não tenha sido feita de imediato.
         """
-        # 1. Verifica se o emissor possui um ativo com o ticker especificado
         ativo_para_venda = None
         if ticker in self.bolsa.ativos:
             for ativo in self.bolsa.ativos[ticker]:
@@ -389,7 +384,6 @@ class Pregao:
         if not ativo_para_venda:
             raise ValueError(f"O usuário não possui ativo com ticker {ticker}")
 
-        # 2. Procura por uma ordem de compra compatível (valor maior ou igual ao mínimo)
         ordem_compativel = None
         for ordem_compra in self.ordens_de_compra:
             if ordem_compra.status == "pendente" and ordem_compra.ticker == ticker:
@@ -397,22 +391,18 @@ class Pregao:
                     ordem_compativel = ordem_compra
                     break
 
-        # 2.1 Se encontrou uma ordem compatível, executa a negociação imediatamente
         if ordem_compativel:
             ordem_compativel.fechar_negocio(emissor, ativo_para_venda)
 
             ordem_venda = OrdemDeVenda(
                 ticker, emissor, ordem_compativel.valor, "fechada"
             )
-            # 3. Insire a ordem criada na lista ordens_de_venda
             self.ordens_de_venda.append(ordem_venda)
 
             return ordem_compativel.valor
 
-        # 2.2 Se não encontrou ordem compatível, cria ordem de venda pendente
         if valor is not None:
             ordem_venda = OrdemDeVenda(ticker, emissor, valor, "pendente")
-            # 3. Insire a ordem criada na lista ordens_de_venda
             self.ordens_de_venda.append(ordem_venda)
 
         return None
@@ -424,8 +414,20 @@ class Pregao:
         Parâmetros:
         - ticker (str): ticker do ativo
         """
-        # Calcule a média de todas as ordens fechadas do ativo
-        raise NotImplementedError()
+        valores_negociados = []
+
+        for ordem in self.ordens_de_compra:
+            if ordem.status == "fechada" and ordem.ticker == ticker:
+                valores_negociados.append(ordem.valor)
+
+        for ordem in self.ordens_de_venda:
+            if ordem.status == "fechada" and ordem.ticker == ticker:
+                valores_negociados.append(ordem.valor)
+
+        if not valores_negociados:
+            return 0.0
+
+        return sum(valores_negociados) / len(valores_negociados)
 
     def oferta_publica_inicial(
         self, emissor: PessoaJuridica, ticker: str, valor: float, quantidade: int
@@ -438,7 +440,17 @@ class Pregao:
         - valor (float) - valor pelo qual a empresa está vendendo o ativo
         - quantidade (int) - quantidade de ativos que a empresa está emitindo
         """
-        raise NotImplementedError()
+        for i in range(quantidade):
+            ativo = self.bolsa.criar_ativo(ticker, emissor, emissor)
+
+            ordem_venda = OrdemDeVenda(ticker, emissor, valor, "pendente")
+            self.ordens_de_venda.append(ordem_venda)
+
+            # TODO: Limitação na estrutura atual do código:
+            # Idealmente, cada ordem deveria ter uma referência direta ao ativo que está sendo negociado, ou pelo menos algum identificador único que permita localizar o ativo específico de forma mais eficiente.
+            # Na implementação atual, quando uma ordem de compra é executada, o sistema precisa procurar entre todos os ativos com o mesmo ticker para encontrar um que pertença ao vendedor. Isso funciona, mas não é muito eficiente.
+            # Uma melhoria futura seria adicionar um identificador único para cada ativo ou uma referência direta na ordem, mas isso exigiria mudanças na estrutura das classes Ordem e Ativo.
+            # O ativo está sendo utilizado implicitamente - ele é criado e fica disponível na estrutura de dados da bolsa, e será localizado posteriormente quando a ordem for executada através da verificação de propriedade (detentor).
 
 
 class SistemaBolsa(BaseSistemaBolsa):
