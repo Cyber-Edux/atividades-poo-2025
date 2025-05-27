@@ -284,10 +284,9 @@ class BaseSistemaBolsa:
         - cnpj (str): CNPJ da emrpesa buscada.
         """
         for empresa in self.pessoas_juridicas:
-           if empresa.cnpj == cnpj:
-               return empresa
+            if empresa.cnpj == cnpj:
+                return empresa
         return None
-
 
     def criar_ativo(
         self, ticker: str, emissor: PessoaJuridica, detentor: Usuario
@@ -300,10 +299,10 @@ class BaseSistemaBolsa:
         - detentor (Usuario): usuário dono do ativo.
         """
         novo_ativo = Ativo(ticker, emissor, detentor)
-       
+
         if ticker not in self.ativos:
-           self.ativos[ticker] = []
-       
+            self.ativos[ticker] = []
+
         self.ativos[ticker].append(novo_ativo)
         return novo_ativo
 
@@ -329,16 +328,18 @@ class Pregao:
         """
         # 1. Verifica se o criador tem saldo suficiente para a compra
         if valor is not None and criador.saldo < valor:
-            raise ValueError(f'Saldo insuficiente para a compra. Saldo atual: R${criador.saldo}')
-        
+            raise ValueError(
+                f"Saldo insuficiente para a compra. Saldo atual: R${criador.saldo}"
+            )
+
         # 2. Procura por uma ordem de venda compatível (valor menor ou igual ao oferecido)
         ordem_compativel = None
         for ordem_venda in self.ordens_de_venda:
-            if ordem_venda.status == 'pendente' and ordem_venda.ticker == ticker:
+            if ordem_venda.status == "pendente" and ordem_venda.ticker == ticker:
                 if valor is None or ordem_venda.valor <= valor:
                     ordem_compativel = ordem_venda
                     break
-                   
+
         # 2.1 Se encontrou uma ordem compatível, executar a negociação imediatamente
         if ordem_compativel:
             ativo_negociado = None
@@ -347,20 +348,22 @@ class Pregao:
                     if ativo.detentor == ordem_compativel.criador:
                         ativo_negociado = ativo
                         break
-                       
+
             if ativo_negociado:
                 ordem_compativel.fechar_negocio(criador, ativo_negociado)
-                
-                ordem_compra = OrdemDeCompra(ticker, criador, ordem_compativel.valor, 'fechada')
+
+                ordem_compra = OrdemDeCompra(
+                    ticker, criador, ordem_compativel.valor, "fechada"
+                )
                 self.ordens_de_compra.append(ordem_compra)
-                
+
                 return ordem_compativel.valor
-        
+
         # 2.2 Se não encontrou ordem compatível, criar ordem de compra pendente
         if valor is not None:
-            ordem_compra = OrdemDeCompra(ticker, criador, valor, 'pendente')
+            ordem_compra = OrdemDeCompra(ticker, criador, valor, "pendente")
             self.ordens_de_compra.append(ordem_compra)
-        
+
         return None
 
     def criar_ordem_de_venda(
@@ -375,42 +378,44 @@ class Pregao:
         - valor (float, opcional): valor mínimo pelo qual o ativo deve ser vendido. Caso seja None, não tem valor mínimo.
         Retorna (float ou None): o valor pelo qual ativo foi vendido, ou None caso a venda não tenha sido feita de imediato.
         """
-       # 1. Verifica se o emissor possui um ativo com o ticker especificado
-       ativo_para_venda = None
-       if ticker in self.bolsa.ativos:
-           for ativo in self.bolsa.ativos[ticker]:
-               if ativo.detentor == emissor:
-                   ativo_para_venda = ativo
-                   break
-       
-       if not ativo_para_venda:
-           raise ValueError(f'O usuário não possui ativo com ticker {ticker}')
-       
-       # 2. Procura por uma ordem de compra compatível (valor maior ou igual ao mínimo)
-       ordem_compativel = None
-       for ordem_compra in self.ordens_de_compra:
-           if ordem_compra.status == 'pendente' and ordem_compra.ticker == ticker:
-               if valor is None or ordem_compra.valor >= valor:
-                   ordem_compativel = ordem_compra
-                   break
-       
-       # 2.1 Se encontrou uma ordem compatível, executa a negociação imediatamente
-       if ordem_compativel:
-           ordem_compativel.fechar_negocio(emissor, ativo_para_venda)
-           
-           ordem_venda = OrdemDeVenda(ticker, emissor, ordem_compativel.valor, 'fechada')
-           # 3. Insire a ordem criada na lista ordens_de_venda
-           self.ordens_de_venda.append(ordem_venda)
-           
-           return ordem_compativel.valor
-       
-       # 2.2 Se não encontrou ordem compatível, cria ordem de venda pendente
-       if valor is not None:
-           ordem_venda = OrdemDeVenda(ticker, emissor, valor, 'pendente')
-           # 3. Insire a ordem criada na lista ordens_de_venda
-           self.ordens_de_venda.append(ordem_venda)
-       
-       return None
+        # 1. Verifica se o emissor possui um ativo com o ticker especificado
+        ativo_para_venda = None
+        if ticker in self.bolsa.ativos:
+            for ativo in self.bolsa.ativos[ticker]:
+                if ativo.detentor == emissor:
+                    ativo_para_venda = ativo
+                    break
+
+        if not ativo_para_venda:
+            raise ValueError(f"O usuário não possui ativo com ticker {ticker}")
+
+        # 2. Procura por uma ordem de compra compatível (valor maior ou igual ao mínimo)
+        ordem_compativel = None
+        for ordem_compra in self.ordens_de_compra:
+            if ordem_compra.status == "pendente" and ordem_compra.ticker == ticker:
+                if valor is None or ordem_compra.valor >= valor:
+                    ordem_compativel = ordem_compra
+                    break
+
+        # 2.1 Se encontrou uma ordem compatível, executa a negociação imediatamente
+        if ordem_compativel:
+            ordem_compativel.fechar_negocio(emissor, ativo_para_venda)
+
+            ordem_venda = OrdemDeVenda(
+                ticker, emissor, ordem_compativel.valor, "fechada"
+            )
+            # 3. Insire a ordem criada na lista ordens_de_venda
+            self.ordens_de_venda.append(ordem_venda)
+
+            return ordem_compativel.valor
+
+        # 2.2 Se não encontrou ordem compatível, cria ordem de venda pendente
+        if valor is not None:
+            ordem_venda = OrdemDeVenda(ticker, emissor, valor, "pendente")
+            # 3. Insire a ordem criada na lista ordens_de_venda
+            self.ordens_de_venda.append(ordem_venda)
+
+        return None
 
     def calcular_cotacao(self, ticker: str) -> float:
         """
