@@ -12,7 +12,6 @@ class Usuario:
         return {"nome": self.nome, "saldo": self.saldo}
 
     def descontar_saldo(self, valor: float):
-        # Corrigido: self.name -> self.nome
         assert self.saldo >= valor, (
             f"O saldo do usuário {self.nome} é insuficiente para o desconto de R${valor}"
         )
@@ -53,8 +52,6 @@ class Usuario:
         extrato = ""
 
         for operacao in self.operacoes:
-            # Corrigido: operacao.data -> operacao['data'] (acesso a dicionário)
-            # Corrigido: /n -> \n (quebra de linha)
             extrato += f"{operacao['data']}: {operacao['operacao']} do ativo {operacao['ticker']} no valor R${operacao['valor']}\n"
 
         return extrato
@@ -96,7 +93,6 @@ class Ativo:
         - lpa (float): o valor do lucro por ação do emissor no mês, em R$
         - payout (float): o percentual de payout do emissor (de 0 a 100)
         """
-        # Corrigido: o provento deve ir para o detentor, não para o emissor
         proventos = lpa * (payout / 100)
         self.detentor.acrescentar_saldo(proventos)
 
@@ -163,21 +159,16 @@ class OrdemDeVenda(Ordem):
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
         - ativo (Ativo): ativo vendido;
         """
-        # 1. Verificar se o ativo é realmente do criador da ordem (ofertante)
         assert ativo.detentor == self.criador, (
             f"O ativo {ativo.ticker} não pertence ao ofertante da ordem"
         )
 
-        # 2. Descontar o valor da ordem do saldo do negociante (quem está comprando)
         negociante.descontar_saldo(self.valor)
 
-        # 3. Acrescentar o valor da venda ao saldo do ofertante
         self.criador.acrescentar_saldo(self.valor)
 
-        # 4. Transferir a propriedade do ativo para o negociante
         ativo.detentor = negociante
 
-        # 5. Registrar as operações nos históricos dos usuários
         from datetime import date
 
         hoje = date.today()
@@ -213,28 +204,22 @@ class OrdemDeCompra(Ordem):
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
         - ativo (Ativo): ativo comprado
         """
-        # 1. Verificar se o ativo é realmente do negociante (quem está vendendo)
         assert ativo.detentor == negociante, (
             f"O ativo {ativo.ticker} não pertence ao negociante"
         )
 
-        # 2. Descontar o valor do ativo do saldo do criador da ordem (demandante/comprador)
         self.criador.descontar_saldo(self.valor)
 
-        # 3. Acrescentar o valor da venda ao saldo do negociante (vendedor)
         negociante.acrescentar_saldo(self.valor)
 
-        # 4. Transferir a propriedade do ativo para o criador da ordem
         ativo.detentor = self.criador
 
-        # 5. Registrar as operações nos históricos dos usuários
         from datetime import date
 
         hoje = date.today()
         self.criador.registrar_compra(ativo.ticker, self.valor, hoje)
         negociante.registrar_venda(ativo.ticker, self.valor, hoje)
 
-        # 6. Alterar o status da ordem para fechada
         self.status = "fechada"
 
 
