@@ -157,7 +157,7 @@ class OrdemDeVenda(Ordem):
         raise NotImplementedError() # Remova após fazer a implementação
 
 
-class OrdemDeCompra:
+class OrdemDeCompra(Ordem):
     def __init__(self, ticker: str, demandante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
         '''
         Parâmetros:
@@ -195,9 +195,8 @@ class BaseSistemaBolsa:
         """
         Retorna uma lista de tickers de ativos.
         """
-        # Faça uma lista com o ticker de cada ativo
-        # Transforme a lista de tickers em um conjunto para remover repetições
-        # Transforme o conjunto em uma lista para retornar
+        # Lembre-se que as chaves do dicionário de ativos são os tickers.
+        # Você pode obter uma lista com as chaves de um dicionário usando o conversor list() e o método keys
         raise NotImplementedError() # Remova ao implementar
 
     
@@ -262,6 +261,7 @@ class BaseSistemaBolsa:
         # Crie um objeto Ativo
         # Insira o objeto no dicionário ativos
         # Retorne o objeto criado
+        raise NotImplementedError() # Remova ao implementar
     
 
 class Pregao:
@@ -366,4 +366,27 @@ class SistemaBolsa(BaseSistemaBolsa):
         raise NotImplementedError() # Remova ao implementar
 
     
+if __name__ == '__main__':
+    # --- TESTE ---
+    bolsa = SistemaBolsa()
+    pregao = bolsa.criar_pregao(date(2025, 5, 27))
+    assert isinstance(pregao, Pregao)
+    assert bolsa.obter_ultimo_pregao() == pregao
+    assert bolsa.obter_pregao_da_data(date(2025, 5, 27)) == pregao
+    weg = bolsa.cadastrar_pessoa_juridica(
+        nome='WEG EQUIPAMENTOS ELÉTRICOS S/A',
+        cnpj='84.429.695/0001-11',
+        saldo=21280000000 # R$ 21,28 bi
+    )
+    assert isinstance(weg, PessoaJuridica)
+    fulano = bolsa.cadastrar_pessoa_fisica(
+        nome='Fulano da Silva',
+        cpf='123.456.789-10',
+        saldo=10000
+    )
+    assert isinstance(fulano, PessoaFisica)
+    pregao.oferta_publica_inicial(weg, 'WEGE3', 20, 100)
+    assert 'WEGE3' in bolsa.ativos.keys()
+    assert len(bolsa.ativos['WEGE3']) == 100
+    assert all([isinstance(acao, Ativo) for acao in bolsa.ativos['WEGE3']])
     
