@@ -13,6 +13,16 @@ class Usuario:
         return {'nome': self.nome, 'saldo': self.saldo}
 
 
+    def descontar_saldo(self, valor: float):
+        assert self.saldo >= valor, f'O saldo do usuário {self.name} é insuficiente para o desconto de R${valor}'
+        self.saldo -= valor
+
+
+    def acrescentar_saldo(self, valor: float):
+        assert valor >= 0, f'Não é possível acrescentar um valor negativo (R${valor}) ao saldo.'
+        self.saldo += valor
+        
+
     def registrar_compra(self, ticker: str, valor: float, data: date):
         self.operacoes.append({
             'operacao': 'compra',
@@ -37,7 +47,10 @@ class Usuario:
         Cada linha do extrato deve descrever uma operação no seguinte formato: 
         '{data}: {operacao} do ativo {ticker} no valor R${valor}' 
         """
-        raise NotImplementedError()
+        # Para cada operação, crie uma linha no formato '{data}: {operacao} do ativo {ticker} no valor R${valor}'
+        # Junte todas as linhas criadas em uma única string, separando-as por '\n'
+        # Sugestão: utilize o método join das strings para juntar as linhas
+        raise NotImplementedError() # Remova esta linha depois de implementar o método
 
          
 class PessoaJuridica(Usuario):
@@ -79,66 +92,101 @@ class Ativo:
         - lpa (float): o valor do lucro por ação do emissor no mês, em R$
         - payout (float): o percentual de payout do emissor (de 0 a 100)
         """
-        raise NotImplementedError()
+        # Calcule o valor do provento como lpa*(payout/100)
+        # Incremente o provento ao saldo do emissor do ativo
+        raise NotImplementedError() # Remova após fazer a implementação
 
 
 class Ordem:
-    def __init__(self, ativo: Ativo, criador: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
+    def __init__(self, ticker: str, criador: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
         '''
         Parâmetros:
-        - ativo (Ativo): ativo a ser negociado (compra ou venda)
+        - ticker (str): ticker do ativo a ser negociado
         - criador (Usuário): quem está criando a ordem
         - valor (float): valor pelo qual o criador pretende negociar o ativo
         - status (str): status de ordem, que pode ser 'pendente' (caso o negócio não esteja fechado), 'fechada' (caso o negócio já tenha sido fechado) ou 'cancelada' (caso a ordem tenha cido cancelada).
         '''
-        self.ativo: Ativo = ativo
+        self.ticker: str = ticker
         self.valor: float = valor
         self.criador: Usuario = criador
         self.status: Literal['pendente', 'fechada', 'cancelada'] = status
 
 
-    def fechar_negocio(self, negociante: Usuario):
+    def fechar_negocio(self, negociante: Usuario, ativo: Ativo):
         '''
         Este método fecha a negociação, fazendo a compra ou venda do ativo de/para outro usuário.
         Parâmetros:
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
+        - ativo (Ativo): ativo negociado.
         '''
+        # Este método não precisa ser implementado
         raise NotImplementedError()
+
+
+    def cancelar(self):
+        '''
+        Faz o cancelamento da ordem.
+        '''
+        self.status = 'cancelada'
         
 
 class OrdemDeVenda(Ordem):
-    def __init__(self, ativo: Ativo, ofertante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
-        super().__init__(ativo, ofertante, valor, status)
-
+    def __init__(self, ticker: str, ofertante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
+        '''
+        Parâmetros:
+        - ticker (str): ticker do ativo a ser negociado
+        - ofertante (Usuário): quem está criando a ordem de venda
+        - valor (float): valor pelo qual o criador pretende negociar o ativo
+        - status (str): status de ordem, que pode ser 'pendente' (caso o negócio não esteja fechado), 'fechada' (caso o negócio já tenha sido fechado) ou 'cancelada' (caso a ordem tenha cido cancelada).
+        '''
+        super().__init__(ticker, ofertante, valor, status)
+        
 
     @override
-    def fechar_negocio(self, negociante: Usuario):
+    def fechar_negocio(self, negociante: Usuario, ativo: Ativo):
         '''
         Este método fecha a negociação, fazendo a venda do ativo para outro usuário.
         Parâmetros:
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
+        - ativo (Ativo): ativo vendido;
         '''
-        raise NotImplementedError()
+        # Verifique se o ativo é realmente do criador da ordem (ofertante)
+        # No saldo do negociante, desconte o valor da ordem
+        # Em seguida, defina o detentor do ativo negociado como o negociante
+        # Mude o status para 'fechada'
+        raise NotImplementedError() # Remova após fazer a implementação
 
 
 class OrdemDeCompra:
-    def __init__(self, ativo: Ativo, demandante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
-        super().__init__(ativo, demandante, valor, status)
-
+    def __init__(self, ticker: str, demandante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
+        '''
+        Parâmetros:
+        - ticker (str): ticker do ativo a ser negociado
+        - demandante (Usuário): quem está criando a ordem de compra
+        - valor (float): valor pelo qual o criador pretende negociar o ativo
+        - status (str): status de ordem, que pode ser 'pendente' (caso o negócio não esteja fechado), 'fechada' (caso o negócio já tenha sido fechado) ou 'cancelada' (caso a ordem tenha cido cancelada).
+        '''
+        super().__init__(ticker, demandante, valor, status)
+        
         
     @override
-    def fechar_negocio(self, negociante: Usuario):
+    def fechar_negocio(self, negociante: Usuario, ativo: Ativo):
         '''
         Este método fecha a negociação, fazendo a compra do ativo de outro usuário.
         Parâmetros:
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
+        - ativo (Ativo): ativo comprado
         '''
-        raise NotImplementedError()
+        # Verifique se o ativo é realmente do negociante
+        # No saldo do criador da ordem (demandante), desconte o valor do ativo
+        # Em seguida, defina o detentor do ativo como o criador da ordem
+        # Mude o status para 'fechada'
+        raise NotImplementedError() # Remova ao implementar
 
 
 class BaseSistemaBolsa:
     def __init__(self):
-        self.ativos: List[Ativo] = []
+        self.ativos: Dict[str, List[Ativo]] = dict() # dicionário de listas de ativos. Cada chave é um ticker, e cada valor é uma lista de ativos com o respectivo ticker
         self.pessoas_fisicas: List[PessoaFisica] = []
         self.pessoas_juridicas: List[PessoaJuridica] = []
 
@@ -147,7 +195,10 @@ class BaseSistemaBolsa:
         """
         Retorna uma lista de tickers de ativos.
         """
-        raise NotImplementedError()
+        # Faça uma lista com o ticker de cada ativo
+        # Transforme a lista de tickers em um conjunto para remover repetições
+        # Transforme o conjunto em uma lista para retornar
+        raise NotImplementedError() # Remova ao implementar
 
     
     def cadastrar_pessoa_fisica(self, nome: str, cpf: str, saldo: float) -> PessoaFisica:
@@ -159,7 +210,8 @@ class BaseSistemaBolsa:
         - saldo (float): saldo da pessoa em conta de investimento, em reais
         Retorna o objeto PessoaFisica criado.
         '''
-        raise NotImplementedError()
+        # Crie um objeto PessoaFisica e insira na lista pessoas_fisicas
+        raise NotImplementedError() # Remova ao implementar
 
     
     def cadastrar_pessoa_juridica(self, nome: str, cnpj: str, saldo: float) -> PessoaJuridica:
@@ -171,7 +223,8 @@ class BaseSistemaBolsa:
         - saldo (float): saldo da empresa em conta de investimento, em reais
         Retorna o objeto PessoaJuridica criado.
         '''
-        raise NotImplementedError()
+        # Crie um objeto PessoaJuridica e insira na lista pessoas_juridicas
+        raise NotImplementedError() # Remova ao implementar
 
 
     def obter_pessoa_fisica_por_cpf(self, cpf: str) -> Union[PessoaFisica, None]:
@@ -181,6 +234,8 @@ class BaseSistemaBolsa:
         Parâmetros:
         - cpf (str): CPF da pessoa buscada.
         '''
+        # Faça um laço for na lista pessoas_fisicas verificando se o CPF da pessoa física atual é igual ao do parâmetro
+        # Ao encontrar o objeto PessoaFisica com o CPF igual ao parâmetro, retorne-o
         raise NotImplementedError()
 
 
@@ -191,7 +246,22 @@ class BaseSistemaBolsa:
         Parâmetros:
         - cnpj (str): CNPJ da emrpesa buscada.
         '''
+        # Faça um laço for na lista pessoas_juridicas verificando se o CNPJ da pessoa juridica atual é igual ao do parâmetro
+        # Ao encontrar o objeto PessoaJuridica com o CNPJ igual ao parâmetro, retorne-o
         raise NotImplementedError()
+
+
+    def criar_ativo(self, ticker: str, emissor: PessoaJuridica, detentor: Usuario) -> Ativo:
+        '''
+        Cria um ativo, faz seu registro e retorna-o como um objeto Ativo.
+        Parâmetro:
+        - ticker (str): ticker do ativo.
+        - emissor (PessoaJuridica): empresa que está emitindo o ativo.
+        - detentor (Usuario): usuário dono do ativo.
+        '''
+        # Crie um objeto Ativo
+        # Insira o objeto no dicionário ativos
+        # Retorne o objeto criado
     
 
 class Pregao:
@@ -212,6 +282,11 @@ class Pregao:
         - valor (float, opcional): valor máximo pelo qual o ativo deve ser comprado. Caso seja None, não tem valor máximo.
         Retorna (float ou None): o valor pelo qual o ativo foi comprado, ou None caso a compra não tenha sido feita de imediato.
         '''
+        # 1. Verifique se o criador da ordem tem saldo o suficiente para a compra
+        # 2. Verifique se existe alguma ordem de venda pendente com valor menor ou igual ao do parâmetro
+        #   2.1 Caso encontre a ordem de venda pendente, feche-a e crie uma ordem de compra já fechada
+        #   2.2 Caso não encontre uma ordem de venda pendente que dê 'match' com a demanda atual, crie uma ordem de compra pendente
+        # 3. Insira a ordem criada na lista ordens_de_compra
         raise NotImplementedError()
 
 
@@ -225,14 +300,22 @@ class Pregao:
         - valor (float, opcional): valor mínimo pelo qual o ativo deve ser vendido. Caso seja None, não tem valor mínimo.
         Retorna (float ou None): o valor pelo qual ativo foi vendido, ou None caso a venda não tenha sido feita de imediato.
         '''
+        # 1. Verifique se o emissor possui um ativo com o ticker especificado
+        # 2. Verifique se existe uma ordem de compra pendente com valor maior ou igual ao do parâmetro:
+        #   2.1 Caso encontre a ordem de compra, feche-a e crie uma ordem de venda já fechada
+        #   2.2 Caso não encontrar uma ordem de compra pendente que dê 'match' com a oferta, crie uma ordem de venda pendente
+        # 3. Insire a ordem criada na lista ordens_de_venda
         raise NotImplementedError()
 
 
-    def calcular_cotacao(self, ativo: Ativo) -> float:
+    def calcular_cotacao(self, ticker: str) -> float:
         '''
         Deve calcular a cotaçaõ do ativo no dia.
         A cotação é calculada como a média dos valores pelos quais o ativo foi negociado.
+        Parâmetros:
+        - ticker (str): ticker do ativo
         '''
+        # Calcule a média de todas as ordens fechadas do ativo
         raise NotImplementedError()
 
 
@@ -268,14 +351,19 @@ class SistemaBolsa(BaseSistemaBolsa):
         '''
         Retorna o ultimo pregão realizado ou None.
         '''
-        raise NotImplementedError()
+        # Verifique se há pregões no dicionário. Caso não haja, retorne None
+        # Caso contrário, obtenha a data mais recente com max(self.pregoes.keys())
+        # Obtenha o pregão da data mais recente e retorne-o
+        raise NotImplementedError() # Remova ao implementar
 
 
     def obter_pregao_da_data(self, data: date) -> Union[Pregao, None]:
         '''
         Retorna o pregão de um dia específico.
         '''
-        raise NotImplementedError()
+        # Verifique se há um pregão na data especificada. Caso não haja, retorne None
+        # Caso haja, retorne-o
+        raise NotImplementedError() # Remova ao implementar
 
     
     
