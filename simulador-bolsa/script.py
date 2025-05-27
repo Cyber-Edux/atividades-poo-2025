@@ -47,10 +47,13 @@ class Usuario:
         Cada linha do extrato deve descrever uma operação no seguinte formato: 
         '{data}: {operacao} do ativo {ticker} no valor R${valor}' 
         """
-        # Para cada operação, crie uma linha no formato '{data}: {operacao} do ativo {ticker} no valor R${valor}'
-        # Junte todas as linhas criadas em uma única string, separando-as por '\n'
-        # Sugestão: utilize o método join das strings para juntar as linhas
-        raise NotImplementedError() # Remova esta linha depois de implementar o método
+
+        extrato = ""
+
+        for operacao in self.operacoes:
+            extrato += f"{operacao.data}: {operacao.operacao} do ativo {operacao.ticker} no valor R${operacao.valor}/n"
+
+        return extrato
 
          
 class PessoaJuridica(Usuario):
@@ -92,9 +95,9 @@ class Ativo:
         - lpa (float): o valor do lucro por ação do emissor no mês, em R$
         - payout (float): o percentual de payout do emissor (de 0 a 100)
         """
-        # Calcule o valor do provento como lpa*(payout/100)
-        # Incremente o provento ao saldo do emissor do ativo
-        raise NotImplementedError() # Remova após fazer a implementação
+        
+        proventos = lpa*(payout/100)
+        self.emissor.acrescentar_saldo(proventos)
 
 
 class Ordem:
@@ -150,14 +153,17 @@ class OrdemDeVenda(Ordem):
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
         - ativo (Ativo): ativo vendido;
         '''
-        # Verifique se o ativo é realmente do criador da ordem (ofertante)
-        # No saldo do negociante, desconte o valor da ordem
-        # Em seguida, defina o detentor do ativo negociado como o negociante
-        # Mude o status para 'fechada'
+
+        # 1. Verifique se o ativo é realmente do criador da ordem (ofertante)
+        # 2. No saldo do negociante, desconte o valor da ordem
+        # 3. Em seguida, defina o detentor do ativo negociado como o negociante
+        
+        self.status = 'fechada'
+
         raise NotImplementedError() # Remova após fazer a implementação
 
 
-class OrdemDeCompra:
+class OrdemDeCompra(Ordem):
     def __init__(self, ticker: str, demandante: Usuario, valor: float, status: Literal['pendente', 'fechada', 'cancelada'] = 'pendente'):
         '''
         Parâmetros:
@@ -177,10 +183,12 @@ class OrdemDeCompra:
         - negociante (Usuario): usuário com quem o criador da ordem está fechando a negociação.
         - ativo (Ativo): ativo comprado
         '''
-        # Verifique se o ativo é realmente do negociante
-        # No saldo do criador da ordem (demandante), desconte o valor do ativo
-        # Em seguida, defina o detentor do ativo como o criador da ordem
-        # Mude o status para 'fechada'
+
+        # 1. Verifique se o ativo é realmente do negociante
+        # 2. No saldo do criador da ordem (demandante), desconte o valor do ativo
+        # 3. Em seguida, defina o detentor do ativo como o criador da ordem
+
+        self.status = 'fechada'
         raise NotImplementedError() # Remova ao implementar
 
 
@@ -195,9 +203,9 @@ class BaseSistemaBolsa:
         """
         Retorna uma lista de tickers de ativos.
         """
-        # Faça uma lista com o ticker de cada ativo
-        # Transforme a lista de tickers em um conjunto para remover repetições
-        # Transforme o conjunto em uma lista para retornar
+        # 1. Faça uma lista com o ticker de cada ativo
+        # 2. Transforme a lista de tickers em um conjunto para remover repetições
+        # 3. Transforme o conjunto em uma lista para retornar
         raise NotImplementedError() # Remova ao implementar
 
     
