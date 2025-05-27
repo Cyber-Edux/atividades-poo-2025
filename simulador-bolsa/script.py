@@ -375,12 +375,42 @@ class Pregao:
         - valor (float, opcional): valor mínimo pelo qual o ativo deve ser vendido. Caso seja None, não tem valor mínimo.
         Retorna (float ou None): o valor pelo qual ativo foi vendido, ou None caso a venda não tenha sido feita de imediato.
         """
-        # 1. Verifique se o emissor possui um ativo com o ticker especificado
-        # 2. Verifique se existe uma ordem de compra pendente com valor maior ou igual ao do parâmetro:
-        #   2.1 Caso encontre a ordem de compra, feche-a e crie uma ordem de venda já fechada
-        #   2.2 Caso não encontrar uma ordem de compra pendente que dê 'match' com a oferta, crie uma ordem de venda pendente
-        # 3. Insire a ordem criada na lista ordens_de_venda
-        raise NotImplementedError()
+       # 1. Verifica se o emissor possui um ativo com o ticker especificado
+       ativo_para_venda = None
+       if ticker in self.bolsa.ativos:
+           for ativo in self.bolsa.ativos[ticker]:
+               if ativo.detentor == emissor:
+                   ativo_para_venda = ativo
+                   break
+       
+       if not ativo_para_venda:
+           raise ValueError(f'O usuário não possui ativo com ticker {ticker}')
+       
+       # 2. Procura por uma ordem de compra compatível (valor maior ou igual ao mínimo)
+       ordem_compativel = None
+       for ordem_compra in self.ordens_de_compra:
+           if ordem_compra.status == 'pendente' and ordem_compra.ticker == ticker:
+               if valor is None or ordem_compra.valor >= valor:
+                   ordem_compativel = ordem_compra
+                   break
+       
+       # 2.1 Se encontrou uma ordem compatível, executa a negociação imediatamente
+       if ordem_compativel:
+           ordem_compativel.fechar_negocio(emissor, ativo_para_venda)
+           
+           ordem_venda = OrdemDeVenda(ticker, emissor, ordem_compativel.valor, 'fechada')
+           # 3. Insire a ordem criada na lista ordens_de_venda
+           self.ordens_de_venda.append(ordem_venda)
+           
+           return ordem_compativel.valor
+       
+       # 2.2 Se não encontrou ordem compatível, cria ordem de venda pendente
+       if valor is not None:
+           ordem_venda = OrdemDeVenda(ticker, emissor, valor, 'pendente')
+           # 3. Insire a ordem criada na lista ordens_de_venda
+           self.ordens_de_venda.append(ordem_venda)
+       
+       return None
 
     def calcular_cotacao(self, ticker: str) -> float:
         """
