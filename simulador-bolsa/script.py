@@ -175,7 +175,6 @@ class OrdemDeVenda(Ordem):
         self.criador.registrar_venda(ativo.ticker, self.valor, hoje)
         negociante.registrar_compra(ativo.ticker, self.valor, hoje)
 
-        # 6. Alterar o status da ordem para fechada
         self.status = "fechada"
 
 
@@ -225,9 +224,7 @@ class OrdemDeCompra(Ordem):
 
 class BaseSistemaBolsa:
     def __init__(self):
-        self.ativos: Dict[str, List[Ativo]] = (
-            dict()
-        )  # dicionário de listas de ativos. Cada chave é um ticker, e cada valor é uma lista de ativos com o respectivo ticker
+        self.ativos: Dict[str, List[Ativo]] = dict()
         self.pessoas_fisicas: List[PessoaFisica] = []
         self.pessoas_juridicas: List[PessoaJuridica] = []
 
@@ -235,10 +232,7 @@ class BaseSistemaBolsa:
         """
         Retorna uma lista de tickers de ativos.
         """
-        # 1. Faça uma lista com o ticker de cada ativo
-        # 2. Transforme a lista de tickers em um conjunto para remover repetições
-        # 3. Transforme o conjunto em uma lista para retornar
-        raise NotImplementedError()  # Remova ao implementar
+        return list(self.ativos.keys())
 
     def cadastrar_pessoa_fisica(
         self, nome: str, cpf: str, saldo: float
@@ -246,13 +240,14 @@ class BaseSistemaBolsa:
         """
         Cadastra uma pessoa física no sistema.
         Parâmetros:
-        - nome (str): nome da pessoa
-        - cpf (str): cpf da pessoa
-        - saldo (float): saldo da pessoa em conta de investimento, em reais
-        Retorna o objeto PessoaFisica criado.
+         - nome (str): nome da pessoa
+         - cpf (str): cpf da pessoa
+         - saldo (float): saldo da pessoa em conta de investimento, em reais
+         Retorna o objeto PessoaFisica criado.
         """
-        # Crie um objeto PessoaFisica e insira na lista pessoas_fisicas
-        raise NotImplementedError()  # Remova ao implementar
+        nova_pessoa = PessoaFisica(nome, cpf, saldo)
+        self.pessoas_fisicas.append(nova_pessoa)
+        return nova_pessoa
 
     def cadastrar_pessoa_juridica(
         self, nome: str, cnpj: str, saldo: float
@@ -265,8 +260,9 @@ class BaseSistemaBolsa:
         - saldo (float): saldo da empresa em conta de investimento, em reais
         Retorna o objeto PessoaJuridica criado.
         """
-        # Crie um objeto PessoaJuridica e insira na lista pessoas_juridicas
-        raise NotImplementedError()  # Remova ao implementar
+        nova_empresa = PessoaJuridica(nome, cnpj, saldo)
+        self.pessoas_juridicas.append(nova_empresa)
+        return nova_empresa
 
     def obter_pessoa_fisica_por_cpf(self, cpf: str) -> Union[PessoaFisica, None]:
         """
@@ -275,9 +271,10 @@ class BaseSistemaBolsa:
         Parâmetros:
         - cpf (str): CPF da pessoa buscada.
         """
-        # Faça um laço for na lista pessoas_fisicas verificando se o CPF da pessoa física atual é igual ao do parâmetro
-        # Ao encontrar o objeto PessoaFisica com o CPF igual ao parâmetro, retorne-o
-        raise NotImplementedError()
+        for pessoa in self.pessoas_fisicas:
+            if pessoa.cpf == cpf:
+                return pessoa
+        return None
 
     def obter_pessoa_juridica_por_cnpj(self, cnpj: str) -> Union[PessoaJuridica, None]:
         """
@@ -286,9 +283,11 @@ class BaseSistemaBolsa:
         Parâmetros:
         - cnpj (str): CNPJ da emrpesa buscada.
         """
-        # Faça um laço for na lista pessoas_juridicas verificando se o CNPJ da pessoa juridica atual é igual ao do parâmetro
-        # Ao encontrar o objeto PessoaJuridica com o CNPJ igual ao parâmetro, retorne-o
-        raise NotImplementedError()
+        for empresa in self.pessoas_juridicas:
+           if empresa.cnpj == cnpj:
+               return empresa
+        return None
+
 
     def criar_ativo(
         self, ticker: str, emissor: PessoaJuridica, detentor: Usuario
@@ -300,9 +299,13 @@ class BaseSistemaBolsa:
         - emissor (PessoaJuridica): empresa que está emitindo o ativo.
         - detentor (Usuario): usuário dono do ativo.
         """
-        # Crie um objeto Ativo
-        # Insira o objeto no dicionário ativos
-        # Retorne o objeto criado
+        novo_ativo = Ativo(ticker, emissor, detentor)
+       
+        if ticker not in self.ativos:
+           self.ativos[ticker] = []
+       
+        self.ativos[ticker].append(novo_ativo)
+        return novo_ativo
 
 
 class Pregao:
@@ -324,12 +327,41 @@ class Pregao:
         - valor (float, opcional): valor máximo pelo qual o ativo deve ser comprado. Caso seja None, não tem valor máximo.
         Retorna (float ou None): o valor pelo qual o ativo foi comprado, ou None caso a compra não tenha sido feita de imediato.
         """
-        # 1. Verifique se o criador da ordem tem saldo o suficiente para a compra
-        # 2. Verifique se existe alguma ordem de venda pendente com valor menor ou igual ao do parâmetro
-        #   2.1 Caso encontre a ordem de venda pendente, feche-a e crie uma ordem de compra já fechada
-        #   2.2 Caso não encontre uma ordem de venda pendente que dê 'match' com a demanda atual, crie uma ordem de compra pendente
-        # 3. Insira a ordem criada na lista ordens_de_compra
-        raise NotImplementedError()
+        # 1. Verifica se o criador tem saldo suficiente para a compra
+        if valor is not None and criador.saldo < valor:
+            raise ValueError(f'Saldo insuficiente para a compra. Saldo atual: R${criador.saldo}')
+        
+        # 2. Procura por uma ordem de venda compatível (valor menor ou igual ao oferecido)
+        ordem_compativel = None
+        for ordem_venda in self.ordens_de_venda:
+            if ordem_venda.status == 'pendente' and ordem_venda.ticker == ticker:
+                if valor is None or ordem_venda.valor <= valor:
+                    ordem_compativel = ordem_venda
+                    break
+                   
+        # 2.1 Se encontrou uma ordem compatível, executar a negociação imediatamente
+        if ordem_compativel:
+            ativo_negociado = None
+            if ticker in self.bolsa.ativos:
+                for ativo in self.bolsa.ativos[ticker]:
+                    if ativo.detentor == ordem_compativel.criador:
+                        ativo_negociado = ativo
+                        break
+                       
+            if ativo_negociado:
+                ordem_compativel.fechar_negocio(criador, ativo_negociado)
+                
+                ordem_compra = OrdemDeCompra(ticker, criador, ordem_compativel.valor, 'fechada')
+                self.ordens_de_compra.append(ordem_compra)
+                
+                return ordem_compativel.valor
+        
+        # 2.2 Se não encontrou ordem compatível, criar ordem de compra pendente
+        if valor is not None:
+            ordem_compra = OrdemDeCompra(ticker, criador, valor, 'pendente')
+            self.ordens_de_compra.append(ordem_compra)
+        
+        return None
 
     def criar_ordem_de_venda(
         self, emissor: Usuario, ticker: str, valor: Optional[float] = None
