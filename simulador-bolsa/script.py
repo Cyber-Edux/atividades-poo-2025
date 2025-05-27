@@ -456,9 +456,7 @@ class Pregao:
 class SistemaBolsa(BaseSistemaBolsa):
     def __init__(self):
         super().__init__()
-        self.pregoes: Dict[str, Pregao] = (
-            dict()
-        )  # Dicionário no formato {'YYYY-MM-DD': <pregao>}.
+        self.pregoes: Dict[str, Pregao] = dict()
 
     def criar_pregao(self, data: date) -> Pregao:
         """
@@ -475,15 +473,13 @@ class SistemaBolsa(BaseSistemaBolsa):
         """
         Retorna o ultimo pregão realizado ou None.
         """
-        # Verifique se há pregões no dicionário. Caso não haja, retorne None
-        # Caso contrário, obtenha a data mais recente com max(self.pregoes.keys())
-        # Obtenha o pregão da data mais recente e retorne-o
-        raise NotImplementedError()  # Remova ao implementar
+        if not self.pregoes:
+            return None
+        ultima_data = max(self.pregoes.keys())
+        return self.pregoes[ultima_data]
 
     def obter_pregao_da_data(self, data: date) -> Union[Pregao, None]:
         """
         Retorna o pregão de um dia específico.
         """
-        # Verifique se há um pregão na data especificada. Caso não haja, retorne None
-        # Caso haja, retorne-o
-        raise NotImplementedError()  # Remova ao implementar
+        return self.pregoes.get(data.isoformat(), None)
