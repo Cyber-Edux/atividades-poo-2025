@@ -452,6 +452,9 @@ class Pregao:
             # Uma melhoria futura seria adicionar um identificador único para cada ativo ou uma referência direta na ordem, mas isso exigiria mudanças na estrutura das classes Ordem e Ativo.
             # O ativo está sendo utilizado implicitamente - ele é criado e fica disponível na estrutura de dados da bolsa, e será localizado posteriormente quando a ordem for executada através da verificação de propriedade (detentor).
 
+            # id(obj)
+            # obj1 == obj2
+
 
 class SistemaBolsa(BaseSistemaBolsa):
     def __init__(self):
